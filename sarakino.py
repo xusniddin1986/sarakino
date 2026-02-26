@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 # --- SOZLAMALAR ---
 BOT_TOKEN = "8699288154:AAHnlS2B6JhMJFJdYuBSiK23zsJPh6P8ALc"
 RENDER_URL = "https://sarakino.onrender.com"
-DEFAULT_ADMINS = [8252667611] # Asosiy admin (o'chirilmaydi)
+DEFAULT_ADMINS = [8252667611] 
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -64,9 +64,10 @@ class SubMiddleware(BaseMiddleware):
         channels = await db_op("SELECT username FROM channels", fetch=True)
         for ch in channels:
             try:
-                user = await event.bot.get_chat_member(f"@{ch['username'].replace('@','')}", event.from_user.id)
+                username = ch['username'].replace('@','')
+                user = await event.bot.get_chat_member(f"@{username}", event.from_user.id)
                 if user.status in ['left', 'kicked']:
-                    kb = [[InlineKeyboardButton(text="Obuna bo'lish", url=f"https://t.me/{ch['username'].replace('@','')}")],
+                    kb = [[InlineKeyboardButton(text="Obuna bo'lish", url=f"https://t.me/{username}")],
                           [InlineKeyboardButton(text="Tekshirish ✅", callback_data="check_sub")]]
                     return await event.answer("❌ Botdan foydalanish uchun kanalga a'zo bo'ling!", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb))
             except: continue
@@ -122,16 +123,19 @@ async def add_movie_start(m: Message, state: FSMContext):
 async def add_movie_file(m: Message, state: FSMContext):
     file_id = m.video.file_id if m.video else m.document.file_id
     await state.update_data(file_id=file_id)
-    await m.answer("🔢 Endi ushbu kino uchun KOD kiriting:")
+    await m.answer("🔢 Kino kodini va ma'lumotlarini quyidagi formatda yuboring:\n\n`KOD` (birinchi qatorda kod bo'lsin)\nNomi:\nYili:\nJanri:")
     await state.set_state(AdminStates.add_movie_details)
 
 @dp.message(AdminStates.add_movie_details)
 async def add_movie_finish(m: Message, state: FSMContext):
     data = await state.get_data()
-    movie_id = m.text
-    # Professional tavsif formati
+    text_lines = m.text.split('\n')
+    movie_id = text_lines[0].strip()
+    details = "\n".join(text_lines[1:])
+    
     caption = (f"🎬 **Kino topildi!**\n\n"
                f"📦 **Kod:** {movie_id}\n"
+               f"{details}\n\n"
                f"📢 **Kanal:** @SaraFilmUzHD\n"
                f"👤 **Admin:** @mra_uz\n\n"
                f"🍿 Yoqimli tomosha!")
@@ -140,7 +144,40 @@ async def add_movie_finish(m: Message, state: FSMContext):
     await m.answer(f"✅ Kino saqlandi!\nKod: {movie_id}", reply_markup=admin_menu())
     await state.clear()
 
-# --- MAJBURIY OBUNA (FAQAT USERNAME) ---
+# --- REKLAMA (USERLAR VA KANALLARGA) ---
+@dp.message(F.text == "✉️ Reklama")
+async def ads_start(m: Message, state: FSMContext):
+    if m.from_user.id in await get_admins():
+        await m.answer("✉️ Reklama xabarini yuboring. Bot buni barcha foydalanuvchilarga va ro'yxatdagi kanallarga tarqatadi:")
+        await state.set_state(AdminStates.send_ads)
+
+@dp.message(AdminStates.send_ads)
+async def send_ads_finish(m: Message, state: FSMContext):
+    users = await db_op("SELECT id FROM users", fetch=True)
+    channels = await db_op("SELECT username FROM channels", fetch=True)
+    u_count, c_count = 0, 0
+    
+    await m.answer("🚀 Reklama tarqatilmoqda...")
+    
+    # Userlarga yuborish
+    for u in users:
+        try:
+            await m.copy_to(u['id'])
+            u_count += 1
+            await asyncio.sleep(0.05)
+        except: continue
+        
+    # Kanallarga yuborish
+    for ch in channels:
+        try:
+            await m.copy_to(f"@{ch['username'].replace('@','')}")
+            c_count += 1
+        except: continue
+        
+    await m.answer(f"✅ Tugatildi!\n👤 Userlar: {u_count}\n📢 Kanallar: {c_count}")
+    await state.clear()
+
+# --- QOLGAN ADMIN FUNKSIYALARI ---
 @dp.message(F.text == "📢 Kanal qo'shish")
 async def add_ch_start(m: Message, state: FSMContext):
     if m.from_user.id in await get_admins():
@@ -151,50 +188,29 @@ async def add_ch_start(m: Message, state: FSMContext):
 async def add_ch_finish(m: Message, state: FSMContext):
     username = m.text.replace("@", "").strip()
     await db_op("INSERT OR REPLACE INTO channels VALUES (?,?)", (username, f"https://t.me/{username}"))
-    await m.answer(f"✅ @{username} majburiy obunaga qo'shildi.")
+    await m.answer(f"✅ @{username} qo'shildi.")
     await state.clear()
 
-# --- ADMIN QO'SHISH ---
 @dp.message(F.text == "👤 Admin qo'shish")
 async def add_admin_start(m: Message, state: FSMContext):
     if m.from_user.id in await get_admins():
-        await m.answer("👤 Yangi adminning ID raqamini yuboring:")
+        await m.answer("👤 Yangi admin ID raqamini yuboring:")
         await state.set_state(AdminStates.add_admin)
 
 @dp.message(AdminStates.add_admin)
 async def add_admin_finish(m: Message, state: FSMContext):
     if m.text.isdigit():
         await db_op("INSERT OR IGNORE INTO admins VALUES (?)", (int(m.text),))
-        await m.answer(f"✅ {m.text} admin qilib tayinlandi.")
+        await m.answer(f"✅ {m.text} admin qilindi.")
         await state.clear()
-    else: await m.answer("❌ Faqat raqam kiriting!")
 
-# --- REKLAMA ---
-@dp.message(F.text == "✉️ Reklama")
-async def ads_start(m: Message, state: FSMContext):
-    if m.from_user.id in await get_admins():
-        await m.answer("✉️ Xabarni yuboring (Rasm, Video, Text):")
-        await state.set_state(AdminStates.send_ads)
-
-@dp.message(AdminStates.send_ads)
-async def send_ads_finish(m: Message, state: FSMContext):
-    users = await db_op("SELECT id FROM users", fetch=True)
-    for u in users:
-        try:
-            await m.copy_to(u['id'])
-            await asyncio.sleep(0.05)
-        except: continue
-    await m.answer("✅ Reklama tarqatildi.")
-    await state.clear()
-
-# --- QOLGAN FUNKSIYALAR ---
 @dp.message(F.text == "⚙️ Bot Yoqish/O'chirish")
 async def toggle_bot(m: Message):
     if m.from_user.id in await get_admins():
         res = await db_op("SELECT status FROM settings WHERE key='bot_active'", fetch=True)
         new_st = 0 if res[0]['status'] == 1 else 1
         await db_op("UPDATE settings SET status=? WHERE key='bot_active'", (new_st,))
-        await m.answer(f"⚙️ Bot holati: {'FAOL ✅' if new_st == 1 else 'OʻCHIK ❌'}")
+        await m.answer(f"⚙️ Bot: {'Yoqildi ✅' if new_st == 1 else 'Oʻchirildi ❌'}")
 
 @dp.message(F.text == "❌ Panelni yopish")
 async def close_panel(m: Message):
@@ -202,10 +218,9 @@ async def close_panel(m: Message):
 
 @dp.callback_query(F.data == "check_sub")
 async def check_callback(c: CallbackQuery):
-    await c.answer("Tekshirildi, kodni qayta kiriting!")
+    await c.answer("Tekshirildi, kodni yuboring!")
     await c.message.delete()
 
-# --- WEBHOOK ---
 @app.on_event("startup")
 async def on_startup():
     await init_db()
