@@ -7,11 +7,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 # --- SOZLAMALAR ---
-TOKEN = "8699288154:AAHnlS2B6JhMJFJdYuBSiK23zsJPh6P8ALc"
+BOT_TOKEN = "8699288154:AAHnlS2B6JhMJFJdYuBSiK23zsJPh6P8ALc"
 ADMINS = [8553997595, 8252667611]  # Adminlar ID ro'yxati
 RENDER_URL = "https://sarakino.onrender.com"
 
-bot = Bot(token=TOKEN)
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 app = FastAPI()
 
