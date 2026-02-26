@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 # --- SOZLAMALAR ---
 BOT_TOKEN = "8699288154:AAHnlS2B6JhMJFJdYuBSiK23zsJPh6P8ALc"
 RENDER_URL = "https://sarakino.onrender.com"
-DEFAULT_ADMINS = [8553997595] 
+DEFAULT_ADMINS = [8252667611] 
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
