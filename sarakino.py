@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 # --- SOZLAMALAR ---
 # Tokenni bu yerga qo'ying yoki Render Env orqali bering
 BOT_TOKEN = "8699288154:AAHnlS2B6JhMJFJdYuBSiK23zsJPh6P8ALc"
-ADMINS = [8553997595]
+ADMINS = [8252667611]
 RENDER_URL = "https://sarakino.onrender.com"
 
 bot = Bot(token=BOT_TOKEN)
