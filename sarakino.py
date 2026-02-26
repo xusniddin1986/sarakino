@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 # --- SOZLAMALAR ---
 BOT_TOKEN = "8699288154:AAHnlS2B6JhMJFJdYuBSiK23zsJPh6P8ALc"
 RENDER_URL = "https://sarakino.onrender.com"
-DEFAULT_ADMINS = [8252667611] 
+DEFAULT_ADMINS = [8553997595] 
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -138,7 +138,7 @@ async def add_movie_finish(m: Message, state: FSMContext):
                f"{details}\n\n"
                f"📢 **Kanal:** @SaraFilmUzHD\n"
                f"👤 **Admin:** @mra_uz\n\n"
-               f"🍿 Yoqimli tomosha!")
+               f"🍿 Yoqimli Hordiq tilaymiz!")
     
     await db_op("INSERT OR REPLACE INTO movies VALUES (?,?,?)", (movie_id, data['file_id'], caption))
     await m.answer(f"✅ Kino saqlandi!\nKod: {movie_id}", reply_markup=admin_menu())
